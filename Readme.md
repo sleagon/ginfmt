@@ -1,6 +1,6 @@
 # GINFMT
 
-Go version >1.13
+Go version >=1.13
 
 ```bash
 go get github.com/sleagon/ginfmt
@@ -15,7 +15,7 @@ ginfmt is a simple toolkit to format response of gin server.
 ```GO
 // default logger(logrus) and default translator (echo)
 ginfmt.Init(nil, nil)
-BadRequest := errfmt.Register(http.StatusNotFound, 10010, "foo message")
+BadRequest := errfmt.Register(http.StatusNotFound, 10010, "record not found")
 
 
 // normal response
