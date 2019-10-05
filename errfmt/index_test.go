@@ -1,4 +1,4 @@
-package error
+package errfmt
 
 import (
 	"context"
@@ -22,5 +22,5 @@ func TestErrorGen(t *testing.T) {
 func TestErrorWithArgs(t *testing.T) {
 	infoErr := Register(http.StatusOK, 20001, "%v is a invalid name")
 	err := infoErr("foo")
-	assert.Equal(t, "foo is a invalid name", err.(*Error).Message(context.TODO(), ""))
+	assert.Equal(t, "foo is a invalid name", err.Message(context.TODO(), ""))
 }

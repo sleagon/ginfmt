@@ -3,9 +3,10 @@ package ginfmt
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+	"github.com/sleagon/ginfmt/errfmt"
 )
 
-var logger Logger = new(logrus.Entry)
+var logger Logger = logrus.New()
 
 const respKey = "$$X_RESP_KEY$$"
 
@@ -20,9 +21,13 @@ type Logger interface {
 	Debugf(format string, args ...interface{})
 }
 
-func Init(log Logger) {
+// Init init ginfmt with log and i18n translator
+func Init(log Logger, trans errfmt.Translator) {
 	if log != nil {
 		logger = log
+	}
+	if trans != nil {
+		errfmt.Init(trans)
 	}
 }
 

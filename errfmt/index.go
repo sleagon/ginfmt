@@ -1,4 +1,4 @@
-package error
+package errfmt
 
 import (
 	"context"
@@ -43,6 +43,10 @@ type Error struct {
 	httpStatus int
 	message    string
 	args       []interface{}
+}
+
+func (e *Error) Level() Level {
+	return e.level
 }
 
 func (e *Error) Error() string {
