@@ -14,7 +14,7 @@ func TestEchoTrans(t *testing.T) {
 }
 
 func TestErrorGen(t *testing.T) {
-	errNotFound := Register(http.StatusNotFound, 1009, "this is a test message")
+	errNotFound := Register(http.StatusNotFound, 1009, "this is a test message", LevelError)
 	err := errNotFound()
 	assert.Equal(t, err.Error(), "1009|404|this is a test message|[]")
 }

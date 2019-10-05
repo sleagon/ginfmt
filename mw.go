@@ -2,6 +2,7 @@ package ginfmt
 
 import (
 	"context"
+	"errors"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sleagon/ginfmt/errfmt"
@@ -13,7 +14,12 @@ func parseError(c *gin.Context) *errfmt.Error {
 		return errfmt.NilError()
 	}
 	for _, err := range c.Errors {
+		// raw error
 		if e, ok := err.Err.(*errfmt.Error); ok && e != nil {
+			return e
+		}
+		// check wrapped error
+		if e, ok := errors.Unwrap(err.Err).(*errfmt.Error); ok && e != nil {
 			return e
 		}
 	}
@@ -22,7 +28,6 @@ func parseError(c *gin.Context) *errfmt.Error {
 
 // get locale from query/header/cookie
 func getLocale(c *gin.Context) string {
-
 	if locale := c.Query("locale"); locale != "" {
 		return locale
 	}
@@ -31,6 +36,9 @@ func getLocale(c *gin.Context) string {
 		return locale
 	}
 	if locale, err := c.Cookie("locale"); err == nil && locale != "" {
+		return locale
+	}
+	if locale, ok := c.Get("locale"); ok && locale != "" {
 		return locale
 	}
 	return ""

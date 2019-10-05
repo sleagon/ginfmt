@@ -3,6 +3,7 @@ package ginfmt
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -58,6 +59,24 @@ func TestError(t *testing.T) {
 	assert.Equal(t, 0, resp.Data)
 }
 
+func TestWrappedError(t *testing.T) {
+	FooError := errfmt.Register(http.StatusNotFound, 10010, "foo message")
+	r := gin.Default()
+	r.Use(MW())
+	r.GET("/ginfmt", func(c *gin.Context) {
+		err := fmt.Errorf("%w, extra info: test info", FooError())
+		Error(c, err)
+	})
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/ginfmt", nil)
+	r.ServeHTTP(w, req)
+	resp := new(Resp2)
+	assert.Nil(t, json.Unmarshal(w.Body.Bytes(), resp))
+	assert.Equal(t, resp.Code, FooError().Code())
+	assert.Equal(t, resp.Message, FooError().Message(context.TODO(), ""))
+	assert.Equal(t, 0, resp.Data)
+}
+
 type Resp3 struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
@@ -79,4 +98,37 @@ func TestDataError(t *testing.T) {
 	assert.Equal(t, resp.Code, FooError().Code())
 	assert.Equal(t, resp.Message, FooError().Message(context.TODO(), ""))
 	assert.Equal(t, "foo", resp.Data)
+}
+
+func DemoTrans(ctx context.Context, locale string, key string) string {
+	demoMap := map[string]map[string]string{
+		"zh": map[string]string{
+			"foo": "这是一个foo信息",
+		},
+		"en-US": map[string]string{
+			"foo": "This is foo message",
+		},
+	}
+	return demoMap[locale][key]
+}
+
+func TestI18n(t *testing.T) {
+	Init(nil, DemoTrans)
+	FooError := errfmt.Register(http.StatusNotFound, 10010, "foo")
+	r := gin.Default()
+	r.Use(func(c *gin.Context) {
+		c.Request.Header.Set("locale", "zh")
+	})
+	r.Use(MW())
+	r.GET("/ginfmt", func(c *gin.Context) {
+		DataError(c, "bar", FooError())
+	})
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/ginfmt", nil)
+	r.ServeHTTP(w, req)
+	resp := new(Resp3)
+	assert.Nil(t, json.Unmarshal(w.Body.Bytes(), resp))
+	assert.Equal(t, resp.Code, FooError().Code())
+	assert.Equal(t, resp.Message, FooError().Message(context.TODO(), "zh"))
+	assert.Equal(t, "bar", resp.Data)
 }
