@@ -38,7 +38,7 @@ func getLocale(c *gin.Context) string {
 	if locale, err := c.Cookie("locale"); err == nil && locale != "" {
 		return locale
 	}
-	if locale, ok := c.Get("locale"); ok && locale != "" {
+	if locale, ok := c.Value("locale").(string); ok && locale != "" {
 		return locale
 	}
 	return ""
