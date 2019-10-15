@@ -121,3 +121,44 @@ func TestWrappedError(t *testing.T) {
 	assert.Equal(t, 0, resp.Data)
 }
 ```
+
+## A runnable example
+
+Here is a runnable example.
+
+```go
+package main
+
+import (
+	"fmt"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"github.com/sleagon/ginfmt"
+	"github.com/sleagon/ginfmt/errfmt"
+)
+
+var (
+	BadRequest = errfmt.Register(http.StatusBadRequest, 10001, "Params is invalid")
+)
+
+func main() {
+	ginfmt.Init(nil, nil)
+	r := gin.Default()
+	r.Use(ginfmt.MW())
+	r.GET("/bad", func(c *gin.Context) {
+		ginfmt.Error(c, BadRequest())
+	})
+	r.GET("/ping", func(c *gin.Context) {
+		ginfmt.Data(c, "pong")
+	})
+	r.GET("/bad_payload", func(c *gin.Context) {
+		// do sth
+		err := fmt.Errorf("this is not a valid phone num %w", BadRequest())
+		ginfmt.DataError(c, gin.H{"phone": "invalid", "email": "valid"}, err)
+	})
+
+	r.Run() // listen and serve on 0.0.0.0:8080
+}
+```
+
