@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"runtime"
 )
 
 type Level int
@@ -43,6 +44,9 @@ type Error struct {
 	httpStatus int
 	message    string
 	args       []interface{}
+	file       string
+	line       int
+	stack      string
 }
 
 func (e *Error) Level() Level {
@@ -50,7 +54,8 @@ func (e *Error) Level() Level {
 }
 
 func (e *Error) Error() string {
-	return fmt.Sprintf("%d|%d|%s|%v", e.code, e.httpStatus, e.message, e.args)
+	return fmt.Sprintf("[%s:%d]%d|%d|%s|%v\nstack: %s",
+		e.file, e.line, e.code, e.httpStatus, e.message, e.args, e.stack)
 }
 
 func (e Error) Message(ctx context.Context, locate string) string {
@@ -91,12 +96,18 @@ func Register(httpStatus int, code int, message string, opts ...interface{}) Err
 		}
 	}
 	return func(args ...interface{}) *Error {
-		return &Error{
+		err := &Error{
 			level:      level,
 			code:       code,
 			httpStatus: httpStatus,
 			message:    message,
 			args:       args,
 		}
+		_, err.file, err.line, _ = runtime.Caller(1)
+		trace := make([]byte, 1<<10)
+		if l := runtime.Stack(trace, false); l > 0 {
+			err.stack = string(trace[:l])
+		}
+		return err
 	}
 }
