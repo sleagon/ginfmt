@@ -1,6 +1,8 @@
 package ginfmt
 
 import (
+	"runtime"
+
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"github.com/sleagon/ginfmt/errfmt"
@@ -8,7 +10,8 @@ import (
 
 var logger Logger = logrus.New()
 
-const respKey = "$$X_RESP_KEY$$"
+const respKey = "$$X_GINFMT_RESP_KEY$$"
+const stackKey = "$$X_GINFMT_STACK_KEY$$"
 
 type Logger interface {
 	Error(args ...interface{})
@@ -31,7 +34,9 @@ func Init(log Logger, trans errfmt.Translator) {
 	}
 }
 
+// Data set data field of response
 func Data(c *gin.Context, data interface{}) {
+	setStack(c)
 	body, ok := c.Get(respKey)
 	if ok && body != nil {
 		logger.Warnf("Response body has been written")
@@ -40,18 +45,39 @@ func Data(c *gin.Context, data interface{}) {
 	c.Set(respKey, data)
 }
 
+// Error set response error
 func Error(c *gin.Context, err error) {
+	setStack(c)
 	if err == nil {
 		return
 	}
 	c.Error(err)
 }
 
+// DataError Set response data and error at the same time.
 func DataError(c *gin.Context, data interface{}, err error) {
+	setStack(c)
 	if data != nil {
 		Data(c, data)
 	}
 	if err != nil {
 		Error(c, err)
+	}
+}
+
+type stack struct {
+	file       string
+	line       int
+	stacktrace string
+}
+
+// setStack set error stack
+func setStack(c *gin.Context) {
+	s := stack{}
+	_, s.file, s.line, _ = runtime.Caller(2)
+	trace := make([]byte, 1<<10)
+	if l := runtime.Stack(trace, false); l > 0 {
+		s.stacktrace = string(trace[:l])
+		c.Set(stackKey, s)
 	}
 }
