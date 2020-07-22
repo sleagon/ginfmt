@@ -1,5 +1,9 @@
 # GINFMT
 
+
+[![Build Status](https://travis-ci.org/sleagon/ginfmt.svg?branch=master)](https://travis-ci.org/sleagon/ginfmt)  [![Go Report Card](https://goreportcard.com/badge/github.com/sleagon/ginfmt)](https://goreportcard.com/report/github.com/sleagon/ginfmt)  [![GoDoc](https://godoc.org/github.com/sleagon/ginfmt?status.svg)](https://godoc.org/github.com/sleagon/ginfmt)  [![MIT license](https://img.shields.io/badge/license-MIT-brightgreen.svg)](https://opensource.org/licenses/MIT)
+
+
 Go version >=1.13
 
 ```bash
@@ -98,9 +102,8 @@ All error returned to users should be pre defined before used.
 
 ## Wrapped error
 
-You may need to add extra log info to error, thanks to `errors.Unwrap` and `fmt.Errorf("%w)` introduced in go 1.13, we
-can easily do this.
-
+You may need to add extra log info to error, thanks to `errors.Unwrap` and `fmt.Errorf("%w, dome extra info", err)`
+introduced in go 1.13, we can easily do this.
 ```GO
 func TestWrappedError(t *testing.T) {
 	FooError := errfmt.Register(http.StatusNotFound, 10010, "foo message")
