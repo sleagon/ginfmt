@@ -102,10 +102,10 @@ func TestDataError(t *testing.T) {
 
 func DemoTrans(ctx context.Context, locale string, key string) string {
 	demoMap := map[string]map[string]string{
-		"zh": map[string]string{
+		"zh": {
 			"foo": "这是一个foo信息",
 		},
-		"en-US": map[string]string{
+		"en-US": {
 			"foo": "This is foo message",
 		},
 	}
