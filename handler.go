@@ -10,6 +10,11 @@ var logger Logger = logrus.New()
 
 const respKey = "$$X_GINFMT_RESP_KEY$$"
 
+// Handler ginfmt handler
+// the interface{} will be set to data field in response body
+// the error will be transformed to some specific response body
+type Handler func(c *gin.Context) (interface{}, error)
+
 type Logger interface {
 	Error(args ...interface{})
 	Errorf(format string, args ...interface{})
@@ -46,7 +51,7 @@ func Error(c *gin.Context, err error) {
 	if err == nil {
 		return
 	}
-	c.Error(err)
+	c.Error(err) // nolint: errcheck
 }
 
 // DataError Set response data and error at the same time.
@@ -56,5 +61,13 @@ func DataError(c *gin.Context, data interface{}, err error) {
 	}
 	if err != nil {
 		Error(c, err)
+	}
+}
+
+// NewHandlderFunc build a gin#HandlerFunc based on Handler
+func NewHandlerFunc(h Handler) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		d, e := h(c)
+		DataError(c, d, e)
 	}
 }

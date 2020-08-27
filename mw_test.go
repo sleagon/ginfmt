@@ -132,3 +132,40 @@ func TestI18n(t *testing.T) {
 	assert.Equal(t, resp.Message, FooError().Message(context.TODO(), "zh"))
 	assert.Equal(t, "bar", resp.Data)
 }
+
+type Resp4 struct {
+	Code    int
+	Message string
+	Data    Data4
+}
+
+type Data4 struct {
+	Name string
+	Age  int
+}
+
+func TestHandler(t *testing.T) {
+
+	Init(nil, DemoTrans)
+	FooError := errfmt.Register(http.StatusNotFound, 10010, "foo")
+
+	myhandler := func(c *gin.Context) (interface{}, error) {
+		return Data4{"foo", 12}, FooError()
+	}
+
+	r := gin.Default()
+	r.Use(func(c *gin.Context) {
+		c.Request.Header.Set("locale", "zh")
+	})
+	r.Use(MW())
+	r.GET("/ginfmt", NewHandlerFunc(myhandler))
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/ginfmt", nil)
+	r.ServeHTTP(w, req)
+	resp := new(Resp4)
+	assert.Nil(t, json.Unmarshal(w.Body.Bytes(), resp))
+	assert.Equal(t, resp.Code, FooError().Code())
+	assert.Equal(t, resp.Message, FooError().Message(context.TODO(), "zh"))
+	assert.Equal(t, "foo", resp.Data.Name)
+	assert.Equal(t, 12, resp.Data.Age)
+}
