@@ -47,15 +47,15 @@ func TestError(t *testing.T) {
 	r := gin.Default()
 	r.Use(MW())
 	r.GET("/ginfmt", func(c *gin.Context) {
-		Error(c, FooError())
+		Error(c, FooError.Gen())
 	})
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/ginfmt", nil)
 	r.ServeHTTP(w, req)
 	resp := new(Resp2)
 	assert.Nil(t, json.Unmarshal(w.Body.Bytes(), resp))
-	assert.Equal(t, resp.Code, FooError().Code())
-	assert.Equal(t, resp.Message, FooError().Message(context.TODO(), ""))
+	assert.Equal(t, resp.Code, FooError.Gen().Code())
+	assert.Equal(t, resp.Message, FooError.Gen().Message(context.TODO(), ""))
 	assert.Equal(t, 0, resp.Data)
 }
 
@@ -64,7 +64,7 @@ func TestWrappedError(t *testing.T) {
 	r := gin.Default()
 	r.Use(MW())
 	r.GET("/ginfmt", func(c *gin.Context) {
-		err := fmt.Errorf("%w, extra info: test info", FooError())
+		err := fmt.Errorf("%w, extra info: test info", FooError.Gen())
 		Error(c, err)
 	})
 	w := httptest.NewRecorder()
@@ -72,8 +72,8 @@ func TestWrappedError(t *testing.T) {
 	r.ServeHTTP(w, req)
 	resp := new(Resp2)
 	assert.Nil(t, json.Unmarshal(w.Body.Bytes(), resp))
-	assert.Equal(t, resp.Code, FooError().Code())
-	assert.Equal(t, resp.Message, FooError().Message(context.TODO(), ""))
+	assert.Equal(t, resp.Code, FooError.Gen().Code())
+	assert.Equal(t, resp.Message, FooError.Gen().Message(context.TODO(), ""))
 	assert.Equal(t, 0, resp.Data)
 }
 
@@ -88,15 +88,15 @@ func TestDataError(t *testing.T) {
 	r := gin.Default()
 	r.Use(MW())
 	r.GET("/ginfmt", func(c *gin.Context) {
-		DataError(c, "foo", FooError())
+		DataError(c, "foo", FooError.Gen())
 	})
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/ginfmt", nil)
 	r.ServeHTTP(w, req)
 	resp := new(Resp3)
 	assert.Nil(t, json.Unmarshal(w.Body.Bytes(), resp))
-	assert.Equal(t, resp.Code, FooError().Code())
-	assert.Equal(t, resp.Message, FooError().Message(context.TODO(), ""))
+	assert.Equal(t, resp.Code, FooError.Gen().Code())
+	assert.Equal(t, resp.Message, FooError.Gen().Message(context.TODO(), ""))
 	assert.Equal(t, "foo", resp.Data)
 }
 
@@ -121,14 +121,14 @@ func TestI18n(t *testing.T) {
 	})
 	r.Use(MW())
 	r.GET("/ginfmt", func(c *gin.Context) {
-		DataError(c, "bar", FooError())
+		DataError(c, "bar", FooError.Gen())
 	})
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/ginfmt", nil)
 	r.ServeHTTP(w, req)
 	resp := new(Resp3)
 	assert.Nil(t, json.Unmarshal(w.Body.Bytes(), resp))
-	assert.Equal(t, resp.Code, FooError().Code())
-	assert.Equal(t, resp.Message, FooError().Message(context.TODO(), "zh"))
+	assert.Equal(t, resp.Code, FooError.Gen().Code())
+	assert.Equal(t, resp.Message, FooError.Gen().Message(context.TODO(), "zh"))
 	assert.Equal(t, "bar", resp.Data)
 }

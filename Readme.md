@@ -10,6 +10,15 @@ go get github.com/sleagon/ginfmt
 
 ginfmt is a simple toolkit to format response of gin server.
 
+Notice:
+
+The `ErrGen` is a simple function in version 1.0.3, which is complicated to validate whether a error is wrapped from a
+known ErrGen. So we just redesigned the ErrGen to a struct, this struct will help us to do the magic quite easily.
+
+Upgrade:
+
+Just replace all `XXXErr()` with `XXXErr.Gen`.
+
 ### Example
 
 ```GO
@@ -26,14 +35,14 @@ ginfmt.Data(c, "foo")
 	"data": "foo"
 }
 // abnormal response
-ginfmt.Error(c, BadRequest())
+ginfmt.Error(c, BadRequest.Gen())
 {
 	"code": 10010,
 	"message": "record not found",
 	"data": nil
 }
 // abnormal response with payload
-ginfmt.DataError(c, "foo", BadRequest())
+ginfmt.DataError(c, "foo", BadRequest.Gen())
 {
 	"code": 10010,
 	"message": "record not found",
@@ -67,15 +76,15 @@ func TestI18n(t *testing.T) {
 	})
 	r.Use(MW())
 	r.GET("/ginfmt", func(c *gin.Context) {
-		DataError(c, "bar", FooError())
+		DataError(c, "bar", FooError.Gen())
 	})
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/ginfmt", nil)
 	r.ServeHTTP(w, req)
 	resp := new(Resp3)
 	assert.Nil(t, json.Unmarshal(w.Body.Bytes(), resp))
-	assert.Equal(t, resp.Code, FooError().Code())
-	assert.Equal(t, resp.Message, FooError().Message(context.TODO(), "zh"))
+	assert.Equal(t, resp.Code, FooError.Gen().Code())
+	assert.Equal(t, resp.Message, FooError.Gen().Message(context.TODO(), "zh"))
 	assert.Equal(t, "bar", resp.Data)
 }
 ```
@@ -108,7 +117,7 @@ func TestWrappedError(t *testing.T) {
 	r.Use(MW())
 	r.GET("/ginfmt", func(c *gin.Context) {
 		// YOUR ROUTER CODE
-		err := fmt.Errorf("%w, extra info: test info", FooError())
+		err := fmt.Errorf("%w, extra info: test info", FooError.Gen())
 		Error(c, err)
 	})
 	w := httptest.NewRecorder()
@@ -116,9 +125,24 @@ func TestWrappedError(t *testing.T) {
 	r.ServeHTTP(w, req)
 	resp := new(Resp2)
 	assert.Nil(t, json.Unmarshal(w.Body.Bytes(), resp))
-	assert.Equal(t, resp.Code, FooError().Code())
-	assert.Equal(t, resp.Message, FooError().Message(context.TODO(), ""))
+	assert.Equal(t, resp.Code, FooError.Gen().Code())
+	assert.Equal(t, resp.Message, FooError.Gen().Message(context.TODO(), ""))
 	assert.Equal(t, 0, resp.Data)
+}
+```
+
+## [New] IS
+
+You may familiar with `github.com/pkg/errors` or `errors` package after 1.17 which provide `errors.Is` method to judge
+whether the error is wrapped from another error. In order to check whether a error is generated from a known `ErrGen`,
+we add a new method Is to realize that.
+
+```go
+func TestErrorIs(t *testing.T) {
+	infoErr := Register(http.StatusOK, 20001, "%v is a invalid name")
+	err := infoErr.Gen("foo")
+	nerr := fmt.Errorf("%w balabalababa info", err)
+	assert.Equal(t, true, infoErr.Is(nerr), "")
 }
 ```
 
@@ -147,14 +171,14 @@ func main() {
 	r := gin.Default()
 	r.Use(ginfmt.MW())
 	r.GET("/bad", func(c *gin.Context) {
-		ginfmt.Error(c, BadRequest())
+		ginfmt.Error(c, BadRequest.Gen())
 	})
 	r.GET("/ping", func(c *gin.Context) {
 		ginfmt.Data(c, "pong")
 	})
 	r.GET("/bad_payload", func(c *gin.Context) {
 		// do sth
-		err := fmt.Errorf("this is not a valid phone num %w", BadRequest())
+		err := fmt.Errorf("this is not a valid phone num %w", BadRequest.Gen())
 		ginfmt.DataError(c, gin.H{"phone": "invalid", "email": "valid"}, err)
 	})
 

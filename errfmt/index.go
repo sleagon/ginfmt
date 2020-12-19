@@ -2,6 +2,7 @@ package errfmt
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -39,23 +40,27 @@ func EchoTrans(ctx context.Context, locate string, key string) string {
 }
 
 type Error struct {
-	level      Level
-	code       int
-	httpStatus int
-	message    string
-	args       []interface{}
-	file       string
-	line       int
-	stack      string
-}
-
-func (e *Error) Level() Level {
-	return e.level
+	ErrGen
+	args  []interface{}
+	file  string
+	line  int
+	stack string
 }
 
 func (e *Error) Error() string {
 	return fmt.Sprintf("[%s:%d]%d|%d|%s|%v\nstack: %s",
 		e.file, e.line, e.code, e.httpStatus, e.message, e.args, e.stack)
+}
+
+type ErrGen struct {
+	level      Level
+	code       int
+	httpStatus int
+	message    string
+}
+
+func (e *ErrGen) Level() Level {
+	return e.level
 }
 
 func (e Error) Message(ctx context.Context, locate string) string {
@@ -70,15 +75,34 @@ func (e Error) Message(ctx context.Context, locate string) string {
 	return fmt.Sprintf(msgFmt, e.args...)
 }
 
-func (e Error) HttpStatus() int {
+func (e ErrGen) HttpStatus() int {
 	return e.httpStatus
 }
 
-func (e Error) Code() int {
+func (e ErrGen) Code() int {
 	return e.code
 }
 
-type ErrGen func(args ...interface{}) *Error
+func (e ErrGen) Gen(args ...interface{}) *Error {
+	err := Error{
+		ErrGen: e,
+		args:   args,
+	}
+	_, err.file, err.line, _ = runtime.Caller(1)
+	trace := make([]byte, 1<<10)
+	if l := runtime.Stack(trace, false); l > 0 {
+		err.stack = string(trace[:l])
+	}
+	return &err
+}
+
+func (e ErrGen) Is(err error) bool {
+	rerr, ok := errors.Unwrap(err).(*Error)
+	if !ok || rerr == nil {
+		return false
+	}
+	return e.code == rerr.code
+}
 
 // Register add a new error generator
 func Register(httpStatus int, code int, message string, opts ...interface{}) ErrGen {
@@ -95,19 +119,10 @@ func Register(httpStatus int, code int, message string, opts ...interface{}) Err
 			log.Panicf("Invalid opt %v", opt)
 		}
 	}
-	return func(args ...interface{}) *Error {
-		err := &Error{
-			level:      level,
-			code:       code,
-			httpStatus: httpStatus,
-			message:    message,
-			args:       args,
-		}
-		_, err.file, err.line, _ = runtime.Caller(1)
-		trace := make([]byte, 1<<10)
-		if l := runtime.Stack(trace, false); l > 0 {
-			err.stack = string(trace[:l])
-		}
-		return err
+	return ErrGen{
+		level:      level,
+		code:       code,
+		httpStatus: httpStatus,
+		message:    message,
 	}
 }
