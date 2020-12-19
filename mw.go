@@ -11,7 +11,7 @@ import (
 // parse a valid error from gin.Context
 func parseError(c *gin.Context) *errfmt.Error {
 	if len(c.Errors) < 1 {
-		return errfmt.NilError()
+		return errfmt.NilError.Gen()
 	}
 	for _, err := range c.Errors {
 		// raw error
@@ -23,7 +23,7 @@ func parseError(c *gin.Context) *errfmt.Error {
 			return e
 		}
 	}
-	return errfmt.UnknownError()
+	return errfmt.UnknownError.Gen()
 }
 
 // get locale from query/header/cookie
