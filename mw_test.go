@@ -150,7 +150,7 @@ func TestHandler(t *testing.T) {
 	FooError := errfmt.Register(http.StatusNotFound, 10010, "foo")
 
 	myhandler := func(c *gin.Context) (interface{}, error) {
-		return Data4{"foo", 12}, FooError()
+		return Data4{"foo", 12}, FooError.Gen()
 	}
 
 	r := gin.Default()
@@ -164,8 +164,8 @@ func TestHandler(t *testing.T) {
 	r.ServeHTTP(w, req)
 	resp := new(Resp4)
 	assert.Nil(t, json.Unmarshal(w.Body.Bytes(), resp))
-	assert.Equal(t, resp.Code, FooError().Code())
-	assert.Equal(t, resp.Message, FooError().Message(context.TODO(), "zh"))
+	assert.Equal(t, resp.Code, FooError.Gen().Code())
+	assert.Equal(t, resp.Message, FooError.Gen().Message(context.TODO(), "zh"))
 	assert.Equal(t, "foo", resp.Data.Name)
 	assert.Equal(t, 12, resp.Data.Age)
 }

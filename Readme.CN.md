@@ -1,6 +1,5 @@
 # GINFMT
 
-[中文说明](Readme.CN.md)
 
 [![Build Status](https://travis-ci.org/sleagon/ginfmt.svg?branch=master)](https://travis-ci.org/sleagon/ginfmt)  [![Go Report Card](https://goreportcard.com/badge/github.com/sleagon/ginfmt)](https://goreportcard.com/report/github.com/sleagon/ginfmt)  [![GoDoc](https://godoc.org/github.com/sleagon/ginfmt?status.svg)](https://godoc.org/github.com/sleagon/ginfmt)  [![MIT license](https://img.shields.io/badge/license-MIT-brightgreen.svg)](https://opensource.org/licenses/MIT)
 
@@ -13,18 +12,17 @@ go get github.com/sleagon/ginfmt
 
 ## Usage
 
-ginfmt is a simple toolkit to format response of gin server.
+ginfmt是一个简单的用来格式化gin服务器输入输出的工具，本身没有任何以来，非常简洁干净。
 
-Notice:
+如果你对你gin服务器有下面的需求，非常适合使用ginfmt：
 
-The `ErrGen` is a simple function in version 1.0.3, which is complicated to validate whether a error is wrapped from a
-known ErrGen. So we just redesigned the ErrGen to a struct, this struct will help us to do the magic quite easily.
+- 服务器的返回是格式化的，每个错误都有明确的code/message信息。
+- 所有的错误都能明确的日志和合适的日志级别。
+- 所有的错误都有清晰的错误栈信息，不需要手动打印日志。
+- 具备I18N的能力，可以自动处理各种语言的错误文案。
 
-Upgrade:
 
-Just replace all `XXXErr()` with `XXXErr.Gen`.
-
-### Example
+### 例子
 
 ```GO
 // default logger(logrus) and default translator (echo)
@@ -57,7 +55,7 @@ ginfmt.DataError(c, "foo", BadRequest.Gen())
 
 ## I18N
 
-Most of time, error message should be translated to perticular language. You need define a translator like this:
+错误文案的多语言支持。
 
 ```GO
 func DemoTrans(ctx context.Context, locale string, key string) string {
@@ -94,14 +92,11 @@ func TestI18n(t *testing.T) {
 }
 ```
 
-ginfmt will read "locale" from query/header/cookie/gin.Context，you may need set this value first.
+注意：ginfmt会按照下面的顺序读取"locale"字段：query/header/cookie/gin.Context，如果你的业务场景不符合这个标准，建议自行家个中间件提前设置好。
 
 ## Logger
 
-All response handled by ginfmt will be logged according to level of error, by default, error whose http status code is 
-less than 500 will be recorded as information, other errors will be recorded as error.
-
-All error returned to users should be pre defined before used.
+ginfmt的所有错误都会按照错误级别设置错误日志的级别，默认地500以上的返回都会一error级别打印日志，低于500的返回的则打印为info级别。注意：所有的日志都应该是预先定义的，不应该采用动态的错误。
 
 ```GO
     // default level
@@ -112,8 +107,8 @@ All error returned to users should be pre defined before used.
 
 ## Wrapped error
 
-You may need to add extra log info to error, thanks to `errors.Unwrap` and `fmt.Errorf("%w, dome extra info", err)`
-introduced in go 1.13, we can easily do this.
+有时候你可能希望在错误日志中加入一些上下文信息，类似pkg/errors这个包的能力，可以采用go 1.13以后的版本的标准做法，具体方式如下：
+
 ```GO
 func TestWrappedError(t *testing.T) {
 	FooError := errfmt.Register(http.StatusNotFound, 10010, "foo message")
@@ -137,9 +132,7 @@ func TestWrappedError(t *testing.T) {
 
 ## [New] IS
 
-You may familiar with `github.com/pkg/errors` or `errors` package after 1.17 which provide `errors.Is` method to judge
-whether the error is wrapped from another error. In order to check whether a error is generated from a known `ErrGen`,
-we add a new method Is to realize that.
+你可能比较熟悉`github.com/pkg/errors`提供的能力，为了方便大家使用，这里也提供Is方法，你可以通过生成以后的error的Is方法判断它是不是出自一个特定类型的error。注意：这里不应该直接使用`==`判断，因为很可能底层对这个方法做了Wrap操作，`==`无法区分出`Wrap`后的错误。
 
 ```go
 func TestErrorIs(t *testing.T) {
@@ -150,9 +143,9 @@ func TestErrorIs(t *testing.T) {
 }
 ```
 
-## A runnable example
+## 一个现成的例子
 
-Here is a runnable example.
+大家可以直接用下面的例子实验。
 
 ```go
 package main
