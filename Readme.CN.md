@@ -143,6 +143,20 @@ func TestErrorIs(t *testing.T) {
 }
 ```
 
+## [New] NewHandlerFunc
+有些人可能不习惯ginfmt这种req/resp的形式，习惯一个handler有明确的response和error，一方面可以方便单测，另一方面保证逻辑更清晰。
+
+```go
+	r.GET("/wrapped_handler", ginfmt.NewHandlerFunc(func(c *gin.Context) (interface{}, error) {
+		if time.Now().Unix()%10 == 1 {
+			return []int{1, 2, 3}, nil
+		}
+		return nil, BadRequest.Gen()
+	}))
+```
+
+
+
 ## 一个现成的例子
 
 大家可以直接用下面的例子实验。
@@ -153,6 +167,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sleagon/ginfmt"
@@ -178,6 +193,12 @@ func main() {
 		err := fmt.Errorf("this is not a valid phone num %w", BadRequest.Gen())
 		ginfmt.DataError(c, gin.H{"phone": "invalid", "email": "valid"}, err)
 	})
+	r.GET("/wrapped_handler", ginfmt.NewHandlerFunc(func(c *gin.Context) (interface{}, error) {
+		if time.Now().Unix()%10 == 1 {
+			return []int{1, 2, 3}, nil
+		}
+		return nil, BadRequest.Gen()
+	}))
 
 	r.Run() // listen and serve on 0.0.0.0:8080
 }

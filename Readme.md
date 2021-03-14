@@ -150,6 +150,18 @@ func TestErrorIs(t *testing.T) {
 }
 ```
 
+## [New] NewHandlerFunc
+Some people may not familiar with the chained handlers of gin, we provided another choice `NewHandlerFunc`
+
+```go
+	r.GET("/wrapped_handler", ginfmt.NewHandlerFunc(func(c *gin.Context) (interface{}, error) {
+		if time.Now().Unix()%10 == 1 {
+			return []int{1, 2, 3}, nil
+		}
+		return nil, BadRequest.Gen()
+	}))
+```
+
 ## A runnable example
 
 Here is a runnable example.
@@ -160,6 +172,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sleagon/ginfmt"
@@ -185,6 +198,12 @@ func main() {
 		err := fmt.Errorf("this is not a valid phone num %w", BadRequest.Gen())
 		ginfmt.DataError(c, gin.H{"phone": "invalid", "email": "valid"}, err)
 	})
+	r.GET("/wrapped_handler", ginfmt.NewHandlerFunc(func(c *gin.Context) (interface{}, error) {
+		if time.Now().Unix()%10 == 1 {
+			return []int{1, 2, 3}, nil
+		}
+		return nil, BadRequest.Gen()
+	}))
 
 	r.Run() // listen and serve on 0.0.0.0:8080
 }
